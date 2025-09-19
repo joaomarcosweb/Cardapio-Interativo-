@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio Interativo - Pizzaria Sabor Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito Sans', sans-serif;
+            background-color: #F7F7F7; /* bg-gray-50 */
+        }
+        /* Scrollbar customizada */
+        .category-scroll::-webkit-scrollbar, .custom-scroll::-webkit-scrollbar {
+            height: 4px;
+            width: 4px;
+        }
+        .category-scroll::-webkit-scrollbar-track, .custom-scroll::-webkit-scrollbar-track {
+            background: #E5E7EB; /* bg-gray-200 */
+        }
+        .category-scroll::-webkit-scrollbar-thumb, .custom-scroll::-webkit-scrollbar-thumb {
+            background: #EA1D2C; /* iFood red */
+            border-radius: 2px;
+        }
+        /* Animações */
+        .modal-overlay, #cart-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #cart-panel, #login-modal, #pizza-form-modal, #confirm-modal, #pizza-options-modal, #addon-form-modal, #banner-form-modal {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .item-pop {
+            animation: pop 0.3s ease-out;
+        }
+        /* Esconde inputs de número */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+        .ifood-red { color: #EA1D2C; }
+        .bg-ifood-red { background-color: #EA1D2C; }
+        .hover\:bg-ifood-red-darker:hover { background-color: #c81a26; }
+        .border-ifood-red { border-color: #EA1D2C; }
+        .ring-ifood-red:focus { --tw-ring-color: #EA1D2C; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+    <!-- Container Principal -->
+    <div id="app" class="container mx-auto max-w-7xl px-4 py-6">
+
+        <!-- Cabeçalho -->
+        <header class="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
+            <div class="flex items-center justify-center gap-3">
+                 <svg class="w-10 h-10 ifood-red" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3.75h.008v.008H12v-.008ZM8.25 9.75A3.75 3.75 0 0112 6a3.75 3.75 0 013.75 3.75m-7.5 0V9A2.25 2.25 0 0112 6.75h0A2.25 2.25 0 0114.25 9v.75m-7.5 0h7.5M12 15.75a3.75 3.75 0 00-3.75 3.75h7.5A3.75 3.75 0 0012 15.75Z" />
+                </svg>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900">Pizzaria <span class="ifood-red">Sabor Digital</span></h1>
+                    <p class="text-sm text-gray-500">O sabor que conecta você.</p>
+                </div>
+            </div>
+            <button id="login-btn" class="border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-2 px-4 rounded-lg transition-colors text-sm">
+                Entrar
+            </button>
+            <button id="logout-btn" class="hidden bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
+                Sair
+            </button>
+        </header>
+
+        <!-- Visão do Cliente -->
+        <div id="customer-view">
+            <!-- Banners Promocionais -->
+            <div class="mb-8 -mx-4 px-4">
+                <div id="banner-scroll" class="category-scroll flex gap-4 overflow-x-auto pb-2 scroll-smooth">
+                    <!-- Banners serão inseridos dinamicamente -->
+                </div>
+            </div>
+            
+            <!-- Filtro de Categorias -->
+            <div class="mb-8 sticky top-0 bg-[#F7F7F7]/80 backdrop-blur-sm z-20 py-4 -mx-4 px-4">
+                 <h2 class="text-lg font-bold mb-3 text-gray-800">Categorias</h2>
+                 <div id="category-filters" class="category-scroll flex gap-3 overflow-x-auto pb-2">
+                    <!-- Botões de categoria serão inseridos aqui -->
+                 </div>
+            </div>
+
+            <!-- Grid de Itens do Menu -->
+            <main>
+                <div id="menu-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <!-- Cards de Itens serão inseridos aqui -->
+                </div>
+            </main>
+        </div>
+        
+        <!-- Visão do Admin -->
+        <div id="admin-view" class="hidden space-y-8">
+            <h2 class="text-3xl font-bold text-gray-900">Painel de Gestão</h2>
+            
+            <!-- Configurações Gerais -->
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Configurações Gerais</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="whatsapp-number" class="block text-sm font-medium text-gray-600 mb-1">Número do WhatsApp</label>
+                        <input type="text" id="whatsapp-number" placeholder="Ex: 5519999999999" class="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="delivery-time" class="block text-sm font-medium text-gray-600 mb-1">Prazo de Entrega (texto)</label>
+                        <input type="text" id="delivery-time" placeholder="Ex: 40-50 minutos" class="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Formas de Pagamento</label>
+                        <div class="flex items-center gap-2">
+                             <input type="text" id="new-payment-method" placeholder="Ex: Dinheiro" class="flex-grow bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                             <button id="add-payment-btn" class="bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-4 rounded-lg">+</button>
+                        </div>
+                        <div id="payment-methods-list" class="mt-2 flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+                 <button id="save-settings-btn" class="mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar Configurações</button>
+            </div>
+
+            <!-- Gerenciar Banners -->
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                 <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Gerenciar Banners</h3>
+                    <button id="add-banner-btn" class="bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-4 rounded-lg">Adicionar Banner</button>
+                 </div>
+                 <div id="admin-banners-list" class="space-y-3 custom-scroll max-h-[50vh] overflow-y-auto pr-2"></div>
+            </div>
+            
+            <!-- Gerenciar Adicionais -->
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                 <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Gerenciar Adicionais</h3>
+                    <button id="add-addon-btn" class="bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-4 rounded-lg">Adicionar Item</button>
+                 </div>
+                 <div id="admin-addons-list" class="space-y-3 custom-scroll max-h-[50vh] overflow-y-auto pr-2"></div>
+            </div>
+
+            <!-- Gerenciar Cardápio -->
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                 <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Gerenciar Cardápio</h3>
+                    <button id="add-pizza-btn" class="bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-4 rounded-lg">Adicionar Pizza</button>
+                 </div>
+                 <div id="admin-menu-list" class="space-y-3 custom-scroll max-h-[50vh] overflow-y-auto pr-2"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Botão Flutuante de Pedido -->
+    <div id="cart-button-wrapper" class="fixed bottom-6 right-6 z-40">
+         <button id="open-cart-btn" class="hidden bg-ifood-red text-white rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 hover:bg-ifood-red-darker flex items-center gap-3">
+            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c.51 0 .962-.328 1.103-.846l1.5-5.25a.75.75 0 0 0-1.1-1.1l-1.5 5.25H7.5Z" /></svg>
+            <span id="cart-count" class="bg-white text-ifood-red text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center border-2 border-ifood-red">0</span>
+        </button>
+    </div>
+
+    <!-- Painel Lateral do Carrinho -->
+    <div id="cart-overlay" class="fixed inset-0 bg-black/60 z-40 hidden" aria-hidden="true"></div>
+    <aside id="cart-panel" class="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform translate-x-full flex flex-col">
+        <header class="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800">Seu Pedido</h2>
+            <button id="close-cart-btn" class="text-gray-500 hover:text-gray-800"><svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+        </header>
+        <div id="order-summary" class="flex-grow p-4 space-y-4 overflow-y-auto custom-scroll bg-gray-50"></div>
+        <footer class="p-4 border-t border-gray-200 bg-white">
+            <div class="flex justify-between items-center text-xl font-bold mb-4">
+                <span class="text-gray-800">Total:</span>
+                <span id="total-price" class="ifood-red">R$ 0,00</span>
+            </div>
+            <div class="space-y-4">
+                 <div>
+                    <label for="customer-name" class="block text-sm font-medium text-gray-600 mb-1">Seu nome</label>
+                    <input type="text" id="customer-name" placeholder="Digite seu nome" class="w-full bg-gray-100 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                    <p id="name-error" class="text-red-500 text-sm mt-1 hidden">Por favor, preencha seu nome.</p>
+                </div>
+                 <div>
+                    <label for="customer-address" class="block text-sm font-medium text-gray-600 mb-1">Seu endereço</label>
+                    <input type="text" id="customer-address" placeholder="Rua, Número, Bairro" class="w-full bg-gray-100 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                    <p id="address-error" class="text-red-500 text-sm mt-1 hidden">Por favor, preencha seu endereço.</p>
+                </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-2">Forma de Pagamento</label>
+                     <div id="payment-options" class="grid grid-cols-3 gap-2"></div>
+                    <p id="payment-error" class="text-red-500 text-sm mt-1 hidden">Selecione uma forma de pagamento.</p>
+                </div>
+            </div>
+            <div class="mt-6">
+                 <button id="send-order-btn" class="w-full bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-3 px-6 rounded-lg shadow-lg flex items-center justify-center gap-2 text-lg transform hover:scale-105 transition-transform duration-300">
+                    Enviar pedido
+                </button>
+            </div>
+        </footer>
+    </aside>
+
+    <!-- ========= MODAIS ========= -->
+
+    <!-- Modal de Login -->
+    <div id="login-modal-overlay" class="modal-overlay fixed inset-0 bg-black/60 z-50 hidden" aria-hidden="true"></div>
+    <div id="login-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white shadow-2xl z-50 rounded-lg p-8 transform scale-95 opacity-0 hidden">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Acesso Restrito</h2>
+        <form id="login-form">
+            <div class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                    <input type="email" id="email" value="teste@teste.com" class="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-600 mb-1">Senha</label>
+                    <input type="password" id="password" value="123456" class="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                </div>
+            </div>
+             <p id="login-error" class="text-red-500 text-sm mt-4 text-center hidden">Credenciais inválidas.</p>
+            <div class="mt-6 flex gap-3">
+                 <button type="button" class="cancel-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                 <button type="submit" class="w-full bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-4 rounded-lg">Entrar</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Modal de Formulário de Pizza (Adicionar/Editar) -->
+    <div id="pizza-form-modal-overlay" class="modal-overlay fixed inset-0 bg-black/60 z-[51] hidden" aria-hidden="true"></div>
+    <div id="pizza-form-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white shadow-2xl z-[52] rounded-lg p-8 transform scale-95 opacity-0 hidden">
+        <h2 id="pizza-form-title" class="text-2xl font-bold text-gray-800 mb-6">Adicionar Nova Pizza</h2>
+        <form id="pizza-form" class="space-y-4 max-h-[70vh] overflow-y-auto custom-scroll pr-4">
+             <input type="hidden" id="pizza-id">
+            <div>
+                <label for="pizza-name" class="block text-sm font-medium text-gray-600">Nome</label>
+                <input type="text" id="pizza-name" required class="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+            </div>
+            <div>
+                <label for="pizza-category" class="block text-sm font-medium text-gray-600">Categoria</label>
+                <input type="text" id="pizza-category" required class="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+            </div>
+             <div>
+                <label for="pizza-description" class="block text-sm font-medium text-gray-600">Descrição</label>
+                <textarea id="pizza-description" rows="3" required class="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent"></textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600">Preços</label>
+                <div class="grid grid-cols-3 gap-2 mt-1">
+                    <div>
+                        <span class="text-xs text-gray-500">Broto (4)</span>
+                        <input type="number" id="pizza-price-broto" step="0.01" required placeholder="R$" class="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">Média (8)</span>
+                        <input type="number" id="pizza-price-media" step="0.01" required placeholder="R$" class="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">Grande (12)</span>
+                        <input type="number" id="pizza-price-grande" step="0.01" required placeholder="R$" class="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+                    </div>
+                </div>
+            </div>
+             <div>
+                <label for="pizza-image" class="block text-sm font-medium text-gray-600">URL da Imagem</label>
+                <input type="url" id="pizza-image" required class="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+            </div>
+             <div class="mt-6 flex gap-3">
+                 <button type="button" class="cancel-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                 <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Salvar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal de Formulário de Adicional (Adicionar/Editar) -->
+    <div id="addon-form-modal-overlay" class="modal-overlay fixed inset-0 bg-black/60 z-[51] hidden" aria-hidden="true"></div>
+    <div id="addon-form-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white shadow-2xl z-[52] rounded-lg p-8 transform scale-95 opacity-0 hidden">
+        <h2 id="addon-form-title" class="text-2xl font-bold text-gray-800 mb-6">Adicionar Adicional</h2>
+        <form id="addon-form" class="space-y-4">
+             <input type="hidden" id="addon-id">
+            <div>
+                <label for="addon-name" class="block text-sm font-medium text-gray-600">Nome</label>
+                <input type="text" id="addon-name" required class="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+            </div>
+             <div>
+                <label for="addon-price" class="block text-sm font-medium text-gray-600">Preço</label>
+                <input type="number" id="addon-price" step="0.01" required class="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+            </div>
+             <div class="mt-6 flex gap-3">
+                 <button type="button" class="cancel-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                 <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Salvar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal de Formulário de Banner (Adicionar/Editar) -->
+    <div id="banner-form-modal-overlay" class="modal-overlay fixed inset-0 bg-black/60 z-[51] hidden" aria-hidden="true"></div>
+    <div id="banner-form-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white shadow-2xl z-[52] rounded-lg p-8 transform scale-95 opacity-0 hidden">
+        <h2 id="banner-form-title" class="text-2xl font-bold text-gray-800 mb-6">Adicionar Banner</h2>
+        <form id="banner-form" class="space-y-4">
+             <input type="hidden" id="banner-id">
+            <div>
+                <label for="banner-image" class="block text-sm font-medium text-gray-600">URL da Imagem do Banner</label>
+                <input type="url" id="banner-image" required class="mt-1 w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent">
+            </div>
+             <div class="mt-6 flex gap-3">
+                 <button type="button" class="cancel-btn w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                 <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Salvar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Modal de Opções da Pizza (Cliente) -->
+    <div id="pizza-options-modal-overlay" class="modal-overlay fixed inset-0 bg-black/60 z-[51] hidden" aria-hidden="true"></div>
+    <div id="pizza-options-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white shadow-2xl z-[52] rounded-lg transform scale-95 opacity-0 hidden flex flex-col">
+        <header class="p-4 border-b border-gray-200">
+            <h2 id="pizza-options-title" class="text-xl font-bold text-gray-800">Personalize sua Pizza</h2>
+        </header>
+        <div id="pizza-options-content" class="p-6 space-y-4 overflow-y-auto custom-scroll max-h-[60vh]">
+            <!-- Conteúdo dinâmico aqui -->
+        </div>
+        <footer class="p-4 mt-auto border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+            <span id="pizza-options-subtotal" class="text-lg font-bold">R$ 0,00</span>
+            <button id="add-custom-pizza-to-cart-btn" class="bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-6 rounded-lg">Adicionar ao carrinho</button>
+        </footer>
+    </div>
+
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div id="confirm-modal-overlay" class="modal-overlay fixed inset-0 bg-black/60 z-[51] hidden" aria-hidden="true"></div>
+    <div id="confirm-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white shadow-2xl z-[52] rounded-lg p-8 transform scale-95 opacity-0 hidden">
+        <h2 id="confirm-modal-title" class="text-xl font-bold text-center text-gray-800 mb-4">Confirmar Ação</h2>
+        <p id="confirm-modal-text" class="text-center text-gray-600 mb-6">Tem certeza?</p>
+        <div class="mt-6 flex gap-3">
+             <button type="button" id="cancel-delete-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg">Cancelar</button>
+             <button type="button" id="confirm-delete-btn" class="w-full bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-2 px-4 rounded-lg">Confirmar</button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const MENU_STORAGE_KEY = 'sabordigital-menu-v1';
+            const SETTINGS_STORAGE_KEY = 'sabordigital-settings-v1';
+            
+            // --- ESTADO DA APLICAÇÃO ---
+            let menuItems = [];
+            let settings = {};
+            let cart = [];
+            let paymentMethod = null;
+            let activeCategory = 'Todos';
+            let isLoggedIn = false;
+            let itemToDelete = { id: null, type: null }; // { id, type: 'pizza' | 'addon' | 'banner' }
+            let bannerScrollInterval = null;
+            let currentItemForOptions = null;
+
+            // --- INICIALIZAÇÃO ---
+            const initApp = () => {
+                loadData();
+                renderView();
+            };
+            
+            // --- CARREGAMENTO E PERSISTÊNCIA DE DADOS ---
+            const loadData = () => {
+                // Tenta carregar os itens do menu
+                try {
+                    const storedMenu = JSON.parse(localStorage.getItem(MENU_STORAGE_KEY));
+                    if (storedMenu && Array.isArray(storedMenu)) {
+                        menuItems = storedMenu;
+                    } else {
+                        throw new Error("Menu antigo ou inválido.");
+                    }
+                } catch (e) {
+                    console.warn("Carregando menu padrão:", e.message);
+                    menuItems = getDefaultMenuItems();
+                    saveMenuItems();
+                }
+                
+                // Tenta carregar as configurações
+                try {
+                    const storedSettings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY));
+                     if (storedSettings && typeof storedSettings === 'object' && Array.isArray(storedSettings.banners)) {
+                        settings = storedSettings;
+                    } else {
+                        throw new Error("Configurações antigas ou inválidas.");
+                    }
+                } catch (e) {
+                    console.warn("Carregando configurações padrão:", e.message);
+                    settings = getDefaultSettings();
+                    saveSettings();
+                }
+            };
+            
+            const getDefaultMenuItems = () => [
+                // Pizzas
+                { id: 1, type: 'pizza', name: 'Mussarela', category: 'Clássicas', description: 'Molho de tomate, mussarela, azeitonas pretas e orégano.', image: 'https://i.postimg.cc/Hx5yL1Nz/MUSSARELA.png', prices: { broto: 40.00, media: 50.00, grande: 60.00 } },
+                { id: 2, type: 'pizza', name: 'Calabresa', category: 'Clássicas', description: 'Calabresa fatiada, cebola, mussarela e orégano.', image: 'https://i.postimg.cc/G3Xcs51x/CALABRESA.png', prices: { broto: 42.50, media: 53.00, grande: 64.00 } },
+                { id: 3, type: 'pizza', name: 'Portuguesa', category: 'Clássicas', description: 'Presunto, ovo, cebola, pimentão, azeitonas e mussarela.', image: 'https://i.postimg.cc/N0DnPZDN/PORTUGUESA.png', prices: { broto: 45.00, media: 56.00, grande: 67.00 } },
+                { id: 4, type: 'pizza', name: 'Frango com Catupiry', category: 'Clássicas', description: 'Peito de frango desfiado, catupiry, milho e mussarela.', image: 'https://i.postimg.cc/4dKr7BvB/Frango-c-catupiry.png', prices: { broto: 48.00, media: 60.00, grande: 72.00 } },
+                { id: 5, type: 'pizza', name: 'Marguerita', category: 'Especiais', description: 'Molho de tomate fresco, mussarela de búfala, manjericão e azeite.', image: 'https://i.postimg.cc/rFG7rdWX/marguerita.png', prices: { broto: 50.00, media: 62.00, grande: 74.00 } },
+                { id: 6, type: 'pizza', name: 'Quatro Queijos', category: 'Especiais', description: 'Mussarela, gorgonzola, catupiry e parmesão.', image: 'https://i.postimg.cc/T377Vn3S/Gemini-Generated-Image-at8sp9at8sp9at8s.png', prices: { broto: 52.00, media: 65.00, grande: 78.00 } },
+                { id: 7, type: 'pizza', name: 'Pepperoni', category: 'Especiais', description: 'Molho de tomate, mussarela e generosas fatias de pepperoni.', image: 'https://i.postimg.cc/kXwfCWK4/PEPPERONI.png', prices: { broto: 55.00, media: 68.00, grande: 81.00 } },
+                { id: 8, type: 'pizza', name: 'Chocolate com Morango', category: 'Doces', description: 'Delicioso chocolate ao leite com morangos frescos fatiados.', image: 'https://i.postimg.cc/MGGyYLFb/BRIGADEIRO.png', prices: { broto: 53.00, media: 66.00, grande: 79.00 } },
+                // Bebidas
+                { id: 9, type: 'drink', name: 'Coca-Cola 350ml', category: 'Bebidas', description: 'Lata de 350ml.', image: 'https://i.postimg.cc/W3BrjbF6/COCA-COLA-350-ML.png', price: 5.00 },
+                { id: 10, type: 'drink', name: 'Coca-Cola Zero 350ml', category: 'Bebidas', description: 'Lata de 350ml.', image: 'https://i.postimg.cc/3w60CJB5/COCA-COLA-350-ML-ZERO.jpg', price: 5.00 },
+                { id: 11, type: 'drink', name: 'Coca-Cola 2L', category: 'Bebidas', description: 'Garrafa de 2 litros.', image: 'https://i.postimg.cc/JnkDTV6y/COCA-COLA-2-L.jpg', price: 14.00 },
+                { id: 12, type: 'drink', name: 'Coca-Cola Zero 2L', category: 'Bebidas', description: 'Garrafa de 2 litros.', image: 'https://i.postimg.cc/HsHctNQx/COCA-COLA-ZERO2-L.jpg', price: 14.00 },
+                { id: 13, type: 'drink', name: 'Guaraná Antarctica 600ml', category: 'Bebidas', description: 'Garrafa de 600ml.', image: 'https://i.postimg.cc/RFKh71hK/ANTARCTICA-600-ML.jpg', price: 9.00 },
+                { id: 14, type: 'drink', name: 'Guaraná Antarctica Zero 600ml', category: 'Bebidas', description: 'Garrafa de 600ml.', image: 'https://i.postimg.cc/xjGqqPWS/ANTARCTICA-ZERO-600-ML.jpg', price: 9.00 },
+                { id: 15, type: 'drink', name: 'Guaraná Antarctica 350ml', category: 'Bebidas', description: 'Lata de 350ml.', image: 'https://i.postimg.cc/dV30HcDq/ANTARCTICA-350-ML.jpg', price: 5.00 }
+            ];
+
+            const getDefaultSettings = () => ({
+                whatsappNumber: '5519999999999',
+                deliveryTime: '30-60 minutos',
+                paymentMethods: ['Pix', 'Débito', 'Crédito'],
+                banners: [
+                    { id: 1, imageUrl: 'https://placehold.co/800x400/EA1D2C/FFFFFF?text=Promoção+do+Dia!' },
+                    { id: 2, imageUrl: 'https://placehold.co/800x400/333333/FFFFFF?text=Combo+Família' },
+                    { id: 3, imageUrl: 'https://placehold.co/800x400/f59e0b/FFFFFF?text=Borda+Grátis!' },
+                ],
+                addons: [
+                    { id: 1, name: 'Borda com Catupiry', price: 8.00 },
+                    { id: 2, name: 'Borda com Cheddar', price: 8.50 },
+                    { id: 3, name: 'Sem Borda', price: 0.00 },
+                ]
+            });
+            
+            const saveMenuItems = () => localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menuItems));
+            const saveSettings = () => localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+
+            // --- LÓGICA DE LOGIN/LOGOUT & VISUALIZAÇÃO ---
+            const renderView = () => {
+                if (isLoggedIn) {
+                    document.getElementById('customer-view').classList.add('hidden');
+                    document.getElementById('admin-view').classList.remove('hidden');
+                    document.getElementById('login-btn').classList.add('hidden');
+                    document.getElementById('logout-btn').classList.remove('hidden');
+                    document.getElementById('cart-button-wrapper').classList.add('hidden');
+                    closeCartPanel();
+                    renderAdminView();
+                    if (bannerScrollInterval) clearInterval(bannerScrollInterval);
+                } else {
+                    document.getElementById('customer-view').classList.remove('hidden');
+                    document.getElementById('admin-view').classList.add('hidden');
+                    document.getElementById('login-btn').classList.remove('hidden');
+                    document.getElementById('logout-btn').classList.add('hidden');
+                    document.getElementById('cart-button-wrapper').classList.remove('hidden');
+                    renderCustomerView();
+                    setupBannerScroll();
+                }
+            };
+            
+            const handleLogin = (email, password) => {
+                if (email === 'teste@teste.com' && password === '123456') {
+                    isLoggedIn = true;
+                    closeModal('login-modal');
+                    renderView();
+                } else {
+                    document.getElementById('login-error').classList.remove('hidden');
+                }
+            };
+
+            const handleLogout = () => { isLoggedIn = false; renderView(); };
+
+            const setupBannerScroll = () => {
+                const bannerContainer = document.getElementById('banner-scroll');
+                if (!bannerContainer || bannerContainer.children.length < 2) return;
+                if (bannerScrollInterval) clearInterval(bannerScrollInterval);
+                bannerScrollInterval = setInterval(() => {
+                    const scrollAmount = bannerContainer.children[0].offsetWidth + 16; // 16px for gap
+                    if (bannerContainer.scrollLeft + scrollAmount >= bannerContainer.scrollWidth - bannerContainer.offsetWidth) {
+                        bannerContainer.scrollTo({ left: 0, behavior: 'smooth' });
+                    } else {
+                        bannerContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                    }
+                }, 4000);
+            };
+            
+            // --- MODAIS ---
+            const openModal = (modalId) => {
+                const overlay = document.getElementById(`${modalId}-overlay`);
+                const modal = document.getElementById(modalId);
+                if (overlay) overlay.classList.remove('hidden');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    setTimeout(() => modal.classList.remove('scale-95', 'opacity-0'), 10);
+                }
+            };
+
+            const closeModal = (modalId) => {
+                const overlay = document.getElementById(`${modalId}-overlay`);
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
+                }
+                 if (overlay) overlay.classList.add('hidden');
+            };
+            
+            // --- LÓGICA DA VISÃO DO ADMIN ---
+            const renderAdminView = () => {
+                // Configurações
+                document.getElementById('whatsapp-number').value = settings.whatsappNumber;
+                document.getElementById('delivery-time').value = settings.deliveryTime;
+                
+                // Renderizar listas
+                renderAdminList('payment-methods-list', settings.paymentMethods, 'payment');
+                renderAdminList('admin-banners-list', settings.banners, 'banner');
+                renderAdminList('admin-addons-list', settings.addons, 'addon');
+                renderAdminList('admin-menu-list', menuItems, 'pizza');
+            };
+
+            const renderAdminList = (containerId, items, type) => {
+                const list = document.getElementById(containerId);
+                list.innerHTML = '';
+                if(items.length === 0){
+                    list.innerHTML = `<p class="text-gray-500 text-center">Nenhum item cadastrado.</p>`;
+                    return;
+                }
+                items.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'bg-gray-50 p-3 rounded-lg flex items-center justify-between border border-gray-200';
+                    let content = '';
+
+                    switch(type) {
+                        case 'payment':
+                            content = `<span class="text-gray-700">${item}</span>`;
+                            break;
+                        case 'banner':
+                            content = `<img src="${item.imageUrl}" class="w-32 h-16 object-cover rounded-md">`;
+                            break;
+                        case 'addon':
+                            content = `<div><p class="font-bold">${item.name}</p><p class="text-sm text-gray-500">R$ ${item.price.toFixed(2)}</p></div>`;
+                            break;
+                        case 'pizza': // A lista de admin ainda trata tudo como "pizza" visualmente
+                            const startingPrice = (item.prices && item.prices.broto) ? `A partir de R$ ${item.prices.broto.toFixed(2)}` : `R$ ${item.price.toFixed(2)}`;
+                            content = `<div class="flex items-center gap-4">
+                                        <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-md">
+                                        <div>
+                                            <p class="font-bold">${item.name}</p>
+                                            <p class="text-sm text-gray-500">${item.category} - ${startingPrice}</p>
+                                        </div>
+                                     </div>`;
+                            break;
+                    }
+
+                    itemEl.innerHTML = `
+                        ${content}
+                        <div class="flex gap-2">
+                            ${type !== 'payment' && type !== 'pizza' ? `<button data-id="${type === 'payment' ? item : item.id}" class="edit-${type}-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-sm">Editar</button>` : ''}
+                            ${type === 'pizza' && (!item.type || item.type === 'pizza') ? `<button data-id="${item.id}" class="edit-pizza-btn bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-sm">Editar</button>` : ''}
+                            <button data-id="${type === 'payment' ? item : item.id}" class="delete-${type}-btn bg-red-100 hover:bg-red-200 text-red-700 font-bold py-1 px-3 rounded text-sm">Excluir</button>
+                        </div>`;
+                    list.appendChild(itemEl);
+                });
+            };
+
+            // --- LÓGICA DA VISÃO DO CLIENTE ---
+            const renderCustomerView = () => {
+                renderBanners();
+                renderCategories();
+                renderMenu();
+                renderPaymentOptionsCustomer();
+                updateApp();
+            };
+
+            const renderBanners = () => {
+                const bannerContainer = document.getElementById('banner-scroll');
+                bannerContainer.innerHTML = '';
+                settings.banners.forEach(banner => {
+                    bannerContainer.innerHTML += `
+                        <div class="flex-shrink-0 w-10/12 sm:w-2/3 md:w-1/2 lg:w-2/5">
+                            <img src="${banner.imageUrl}" alt="Banner promocional" class="w-full h-auto object-cover rounded-lg shadow-md" onerror="this.onerror=null;this.src='https://placehold.co/800x400/cccccc/333333?text=Banner+Indisponível';">
+                        </div>`;
+                });
+            };
+
+            const renderCategories = () => {
+                const categoryFiltersContainer = document.getElementById('category-filters');
+                const categories = ['Todos', ...new Set(menuItems.map(p => p.category))];
+                categoryFiltersContainer.innerHTML = '';
+                categories.forEach(category => {
+                    const isActive = category === activeCategory;
+                    const buttonClasses = isActive ? 'bg-ifood-red text-white' : 'bg-white text-gray-600 hover:bg-gray-200 border border-gray-300';
+                    const button = document.createElement('button');
+                    button.textContent = category;
+                    button.className = `category-btn whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm ${buttonClasses}`;
+                    button.dataset.category = category;
+                    categoryFiltersContainer.appendChild(button);
+                });
+            };
+
+            const renderMenu = () => {
+                const menuContainer = document.getElementById('menu-grid');
+                menuContainer.innerHTML = '';
+                const filteredItems = activeCategory === 'Todos' ? menuItems : menuItems.filter(p => p.category === activeCategory);
+                if(filteredItems.length === 0){
+                    menuContainer.innerHTML = `<p class="text-gray-500 text-center col-span-full">Nenhum item nesta categoria.</p>`; return;
+                }
+                filteredItems.forEach(item => {
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'menu-item-card bg-white rounded-lg shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-lg flex flex-col md:flex-row';
+                    
+                    const isPizza = !item.type || item.type === 'pizza';
+
+                    const priceHtml = isPizza
+                        ? `<p class="text-lg font-bold text-gray-900">A partir de R$ ${item.prices.broto.toFixed(2).replace('.', ',')}</p>`
+                        : `<p class="text-lg font-bold text-gray-900">R$ ${item.price.toFixed(2).replace('.', ',')}</p>`;
+                    
+                    const buttonHtml = isPizza
+                        ? `<button class="add-pizza-to-options-btn border-ifood-red border text-ifood-red font-bold py-1 px-3 rounded-lg hover:bg-red-50 transition-colors" data-id="${item.id}">Adicionar</button>`
+                        : `<button class="add-drink-to-cart-btn bg-ifood-red hover:bg-ifood-red-darker text-white font-bold py-1 px-3 rounded-lg transition-colors" data-id="${item.id}">Adicionar</button>`;
+
+                    itemCard.innerHTML = `
+                        <div class="md:w-1/3">
+                            <img src="${item.image}" alt="${item.name}" class="w-full h-40 md:h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x400/e5e7eb/3f3f3f?text=Imagem';">
+                        </div>
+                        <div class="p-4 flex flex-col flex-grow justify-between md:w-2/3">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">${item.name}</h3>
+                                <p class="text-gray-500 text-sm mt-1">${item.description}</p>
+                            </div>
+                            <div class="flex justify-between items-center mt-4">
+                                ${priceHtml}
+                                ${buttonHtml}
+                            </div>
+                        </div>`;
+                    menuContainer.appendChild(itemCard);
+                });
+            };
+
+            const renderPaymentOptionsCustomer = () => {
+                const container = document.getElementById('payment-options');
+                container.innerHTML = '';
+                settings.paymentMethods.forEach(method => {
+                    const button = document.createElement('button');
+                    button.dataset.payment = method;
+                    button.className = 'payment-option text-sm p-2 border-2 border-gray-300 rounded-md transition-colors text-gray-700 bg-white';
+                    button.textContent = method;
+                    container.appendChild(button);
+                });
+            };
+            
+            // --- LÓGICA DO CARRINHO ---
+            const cartPanel = document.getElementById('cart-panel');
+            const cartOverlay = document.getElementById('cart-overlay');
+            const openCartBtn = document.getElementById('open-cart-btn');
+            
+            const openCartPanel = () => { cartOverlay.classList.remove('hidden'); cartPanel.classList.remove('translate-x-full'); };
+            const closeCartPanel = () => { cartOverlay.classList.add('hidden'); cartPanel.classList.add('translate-x-full'); };
+            
+            const renderOrderSummary = () => {
+                const summaryContainer = document.getElementById('order-summary');
+                if (cart.length === 0) {
+                    summaryContainer.innerHTML = '<p class="text-center text-gray-500 mt-8">Seu carrinho está vazio.</p>';
+                    document.getElementById('total-price').textContent = 'R$ 0,00';
+                    return;
+                }
+                summaryContainer.innerHTML = '';
+                let totalPrice = 0;
+                cart.forEach(cartItem => {
+                    totalPrice += cartItem.subtotal;
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'bg-white p-2 rounded-lg';
+
+                    let detailsHtml = '';
+                    if (cartItem.type === 'pizza') {
+                        const addonsText = cartItem.addons.map(addon => `<p class="text-xs text-gray-500 ml-2">+ ${addon.name}</p>`).join('');
+                        detailsHtml = `
+                            <p class="font-semibold text-gray-800">${cartItem.itemDetails.name} (${cartItem.size})</p>
+                            <p class="text-sm text-gray-600">R$ ${cartItem.subtotal.toFixed(2).replace('.', ',')}</p>
+                            <div class="mt-1">${addonsText}</div>
+                            ${cartItem.observation ? `<p class="text-xs text-gray-500 mt-1 ml-2"><em>Obs: ${cartItem.observation}</em></p>` : ''}
+                        `;
+                    } else { // 'drink'
+                        detailsHtml = `
+                            <p class="font-semibold text-gray-800">${cartItem.itemDetails.name}</p>
+                            <p class="text-sm text-gray-600">R$ ${cartItem.subtotal.toFixed(2).replace('.', ',')}</p>
+                        `;
+                    }
+
+                    itemElement.innerHTML = `
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start gap-3">
+                                <img src="${cartItem.itemDetails.image}" alt="${cartItem.itemDetails.name}" class="w-14 h-14 object-cover rounded-md">
+                                <div>
+                                    ${detailsHtml}
+                                </div>
+                            </div>
+                            <button class="remove-from-cart-btn text-red-500 hover:text-red-700 font-bold p-2 flex-shrink-0" data-id="${cartItem.cartItemId}">&times;</button>
+                        </div>
+                    `;
+                    summaryContainer.appendChild(itemElement);
+                });
+                document.getElementById('total-price').textContent = `R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
+            };
+            
+            const updateCartButton = () => {
+                const totalItems = cart.length;
+                const cartCount = document.getElementById('cart-count');
+                if (totalItems > 0 && !isLoggedIn) {
+                    cartCount.textContent = totalItems;
+                    openCartBtn.classList.remove('hidden');
+                } else {
+                    openCartBtn.classList.add('hidden');
+                    if (cart.length === 0) closeCartPanel();
+                }
+            };
+            
+            const addToCart = (item) => {
+                cart.push(item);
+                updateApp();
+            };
+
+            const removeFromCart = (cartItemId) => {
+                cart = cart.filter(item => item.cartItemId !== cartItemId);
+                updateApp();
+            };
+            
+            const updateApp = () => { renderOrderSummary(); updateCartButton(); };
+            
+            // --- MODAL DE OPÇÕES DA PIZZA ---
+            const openPizzaOptionsModal = (pizzaId) => {
+                currentItemForOptions = menuItems.find(p => p.id === pizzaId);
+                if (!currentItemForOptions) return;
+
+                document.getElementById('pizza-options-title').textContent = `Personalize sua ${currentItemForOptions.name}`;
+                const content = document.getElementById('pizza-options-content');
+                
+                let sizesHtml = `<h3 class="font-bold text-gray-700">Tamanho</h3><div id="pizza-size-options" class="grid grid-cols-3 gap-2">`;
+                const sizes = [
+                    { key: 'broto', name: 'Broto', slices: 4 },
+                    { key: 'media', name: 'Média', slices: 8 },
+                    { key: 'grande', name: 'Grande', slices: 12 },
+                ];
+                sizes.forEach((size, index) => {
+                    sizesHtml += `
+                        <label class="text-center p-2 border rounded-md has-[:checked]:bg-red-50 has-[:checked]:border-ifood-red cursor-pointer">
+                            <input type="radio" name="pizza-size" value="${size.key}" class="sr-only" ${index === 0 ? 'checked' : ''}>
+                            <span class="font-semibold block">${size.name}</span>
+                            <span class="text-xs text-gray-500">${size.slices} pedaços</span>
+                        </label>
+                    `;
+                });
+                sizesHtml += `</div>`;
+                
+                let addonsHtml = `<h3 class="font-bold text-gray-700 mt-4">Adicionais</h3><div class="space-y-2">`;
+                settings.addons.forEach(addon => {
+                    addonsHtml += `
+                        <label class="flex items-center justify-between p-2 border rounded-md has-[:checked]:bg-red-50 has-[:checked]:border-ifood-red">
+                            <div>
+                                <p class="font-semibold text-gray-800">${addon.name}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-gray-600">+ R$ ${addon.price.toFixed(2)}</span>
+                                <input type="checkbox" data-id="${addon.id}" class="addon-checkbox h-5 w-5 rounded border-gray-300 text-ifood-red focus:ring-ifood-red">
+                            </div>
+                        </label>`;
+                });
+                addonsHtml += `</div>`;
+
+                let observationHtml = `<h3 class="font-bold text-gray-700 mt-4">Observações</h3>
+                                       <textarea id="pizza-observation" class="w-full bg-gray-100 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none ring-ifood-red focus:ring-2 focus:border-transparent" rows="3" placeholder="Ex: tirar a cebola, bem passada, etc."></textarea>`;
+
+                content.innerHTML = sizesHtml + addonsHtml + observationHtml;
+
+                updatePizzaOptionsSubtotal();
+                openModal('pizza-options-modal');
+
+                document.querySelectorAll('input[name="pizza-size"]').forEach(radio => {
+                    radio.addEventListener('change', updatePizzaOptionsSubtotal);
+                });
+                document.querySelectorAll('.addon-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updatePizzaOptionsSubtotal);
+                });
+            };
+
+            const updatePizzaOptionsSubtotal = () => {
+                if (!currentItemForOptions) return;
+                
+                const selectedSizeEl = document.querySelector('input[name="pizza-size"]:checked');
+                if (!selectedSizeEl) return;
+                const selectedSize = selectedSizeEl.value;
+
+                let subtotal = currentItemForOptions.prices[selectedSize];
+
+                const selectedAddonIds = Array.from(document.querySelectorAll('.addon-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+                selectedAddonIds.forEach(id => {
+                    const addon = settings.addons.find(a => a.id === id);
+                    if (addon) subtotal += addon.price;
+                });
+                document.getElementById('pizza-options-subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+            };
+            
+            // --- HANDLERS DE AÇÕES ---
+            const handleSendOrder = () => {
+                // Validação
+                const customerNameInput = document.getElementById('customer-name');
+                const customerAddressInput = document.getElementById('customer-address');
+                const customerName = customerNameInput.value.trim();
+                const customerAddress = customerAddressInput.value.trim();
+                let hasError = false;
+
+                if (!customerName) { document.getElementById('name-error').classList.remove('hidden'); hasError = true; } 
+                else { document.getElementById('name-error').classList.add('hidden'); }
+                
+                if (!customerAddress) { document.getElementById('address-error').classList.remove('hidden'); hasError = true; } 
+                else { document.getElementById('address-error').classList.add('hidden'); }
+                
+                if (!paymentMethod) { document.getElementById('payment-error').classList.remove('hidden'); hasError = true; } 
+                else { document.getElementById('payment-error').classList.add('hidden'); }
+                
+                if (cart.length === 0) {
+                   const summaryContainer = document.getElementById('order-summary');
+                    summaryContainer.innerHTML = '<p class="text-center text-red-500 font-bold">Adicione itens ao seu pedido!</p>';
+                    setTimeout(() => renderOrderSummary(), 2000);
+                    hasError = true;
+                }
+                if (hasError) return;
+
+                // Montar mensagem
+                let orderItemsText = cart.map(cartItem => {
+                    if (cartItem.type === 'pizza') {
+                        let text = `  - 1x ${cartItem.itemDetails.name} (${cartItem.size})`;
+                        if (cartItem.addons.length > 0) {
+                            text += `\n    ${cartItem.addons.map(a => `+ ${a.name}`).join('\n    ')}`;
+                        }
+                        if (cartItem.observation) {
+                            text += `\n    Obs: ${cartItem.observation}`;
+                        }
+                        return text;
+                    } else { // 'drink'
+                        return `  - 1x ${cartItem.itemDetails.name}`;
+                    }
+                }).join('\n\n');
+
+                let total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+                
+                let message = `Olá! Gostaria de fazer o seguinte pedido:\n\n*ITENS DO PEDIDO:*\n${orderItemsText}\n\n*TOTAL:* R$ ${total.toFixed(2)}\n*NOME:* ${customerName}\n*ENDEREÇO:* ${customerAddress}\n*PAGAMENTO:* ${paymentMethod}\n\n_Prazo de entrega: ${settings.deliveryTime}._`;
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=${settings.whatsappNumber}&text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+            };
+
+            const openConfirmModal = (id, type, text) => {
+                itemToDelete = { id, type };
+                document.getElementById('confirm-modal-title').textContent = `Confirmar Exclusão`;
+                document.getElementById('confirm-modal-text').textContent = text || `Tem certeza que deseja excluir este item?`;
+                openModal('confirm-modal');
+            };
+            
+            // --- EVENT LISTENERS GERAIS ---
+            document.addEventListener('click', (e) => {
+                const target = e.target;
+                
+                // Modais Gerais
+                if (target.closest('.cancel-btn')) {
+                    const modal = target.closest('[id$="-modal"]');
+                    if (modal) closeModal(modal.id);
+                }
+                if (target.closest('#cancel-delete-btn')) closeModal('confirm-modal');
+                
+                // Login/Logout
+                if (target.closest('#login-btn')) openModal('login-modal');
+                if (target.closest('#logout-btn')) handleLogout();
+
+                // Cliente
+                if (target.classList.contains('category-btn')) {
+                    activeCategory = target.dataset.category;
+                    renderCategories();
+                    renderMenu();
+                }
+                if (target.classList.contains('add-pizza-to-options-btn')) {
+                    openPizzaOptionsModal(parseInt(target.dataset.id));
+                }
+                if (target.classList.contains('add-drink-to-cart-btn')) {
+                    const itemId = parseInt(target.dataset.id);
+                    const item = menuItems.find(p => p.id === itemId);
+                    if (item) {
+                        const cartItem = {
+                            cartItemId: Date.now(),
+                            type: 'drink',
+                            itemDetails: item,
+                            subtotal: item.price
+                        };
+                        addToCart(cartItem);
+                        target.textContent = 'Adicionado!';
+                        target.classList.add('item-pop');
+                        setTimeout(() => {
+                            target.textContent = 'Adicionar';
+                            target.classList.remove('item-pop');
+                        }, 1000);
+                    }
+                }
+                if (target.closest('#open-cart-btn')) openCartPanel();
+                if (target.closest('#close-cart-btn') || target.id === 'cart-overlay') closeCartPanel();
+                if (target.classList.contains('remove-from-cart-btn')) {
+                    removeFromCart(parseInt(target.dataset.id));
+                }
+                if(target.classList.contains('payment-option')){
+                    document.querySelectorAll('.payment-option').forEach(btn => btn.classList.remove('bg-ifood-red', 'text-white', 'border-ifood-red'));
+                    target.classList.add('bg-ifood-red', 'text-white', 'border-ifood-red');
+                    paymentMethod = target.dataset.payment;
+                    document.getElementById('payment-error').classList.add('hidden');
+                }
+                if (target.closest('#send-order-btn')) handleSendOrder();
+                if (target.closest('#add-custom-pizza-to-cart-btn')) {
+                    const selectedAddonIds = Array.from(document.querySelectorAll('.addon-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+                    const selectedAddons = settings.addons.filter(a => selectedAddonIds.includes(a.id));
+                    
+                    const selectedSizeKey = document.querySelector('input[name="pizza-size"]:checked').value;
+                    const sizeMap = { broto: 'Broto', media: 'Média', grande: 'Grande' };
+                    const selectedSizeName = sizeMap[selectedSizeKey];
+
+                    const subtotal = currentItemForOptions.prices[selectedSizeKey] + selectedAddons.reduce((sum, a) => sum + a.price, 0);
+                    
+                    const cartItem = {
+                        cartItemId: Date.now(),
+                        type: 'pizza',
+                        itemDetails: currentItemForOptions,
+                        size: selectedSizeName,
+                        addons: selectedAddons,
+                        observation: document.getElementById('pizza-observation').value.trim(),
+                        subtotal: subtotal
+                    };
+                    addToCart(cartItem);
+                    closeModal('pizza-options-modal');
+                }
+                
+                // Admin - Ações
+                if (target.closest('#save-settings-btn')) {
+                    settings.whatsappNumber = document.getElementById('whatsapp-number').value;
+                    settings.deliveryTime = document.getElementById('delivery-time').value;
+                    saveSettings();
+                    target.closest('#save-settings-btn').textContent = 'Salvo!';
+                    setTimeout(() => { target.closest('#save-settings-btn').textContent = 'Salvar Configurações'; }, 2000);
+                }
+                // Adicionar
+                if (target.closest('#add-payment-btn')) {
+                    const input = document.getElementById('new-payment-method');
+                    const newMethod = input.value.trim();
+                    if (newMethod && !settings.paymentMethods.includes(newMethod)) {
+                        settings.paymentMethods.push(newMethod);
+                        saveSettings();
+                        renderAdminList('payment-methods-list', settings.paymentMethods, 'payment');
+                        input.value = '';
+                    }
+                }
+                if (target.closest('#add-pizza-btn')) { document.getElementById('pizza-form').reset(); document.getElementById('pizza-id').value = ''; openModal('pizza-form-modal'); }
+                if (target.closest('#add-addon-btn')) { document.getElementById('addon-form').reset(); document.getElementById('addon-id').value = ''; openModal('addon-form-modal'); }
+                if (target.closest('#add-banner-btn')) { document.getElementById('banner-form').reset(); document.getElementById('banner-id').value = ''; openModal('banner-form-modal'); }
+                
+                // Editar
+                if(target.classList.contains('edit-pizza-btn')) {
+                    const item = menuItems.find(i => i.id == target.dataset.id);
+                    document.getElementById('pizza-id').value = item.id;
+                    document.getElementById('pizza-name').value = item.name;
+                    document.getElementById('pizza-category').value = item.category;
+                    document.getElementById('pizza-description').value = item.description;
+                    document.getElementById('pizza-price-broto').value = item.prices.broto;
+                    document.getElementById('pizza-price-media').value = item.prices.media;
+                    document.getElementById('pizza-price-grande').value = item.prices.grande;
+                    document.getElementById('pizza-image').value = item.image;
+                    openModal('pizza-form-modal');
+                }
+                 if(target.classList.contains('edit-addon-btn')) {
+                    const item = settings.addons.find(i => i.id == target.dataset.id);
+                    document.getElementById('addon-id').value = item.id;
+                    document.getElementById('addon-name').value = item.name;
+                    document.getElementById('addon-price').value = item.price;
+                    openModal('addon-form-modal');
+                }
+                 if(target.classList.contains('edit-banner-btn')) {
+                    const item = settings.banners.find(i => i.id == target.dataset.id);
+                    document.getElementById('banner-id').value = item.id;
+                    document.getElementById('banner-image').value = item.imageUrl;
+                    openModal('banner-form-modal');
+                }
+
+                // Excluir
+                if(target.classList.contains('delete-payment-btn')) {
+                    settings.paymentMethods = settings.paymentMethods.filter(p => p !== target.dataset.id);
+                    saveSettings();
+                    renderAdminList('payment-methods-list', settings.paymentMethods, 'payment');
+                }
+                if(target.classList.contains('delete-pizza-btn')) openConfirmModal(parseInt(target.dataset.id), 'pizza', 'Deseja excluir este item?');
+                if(target.classList.contains('delete-addon-btn')) openConfirmModal(parseInt(target.dataset.id), 'addon', 'Deseja excluir este adicional?');
+                if(target.classList.contains('delete-banner-btn')) openConfirmModal(parseInt(target.dataset.id), 'banner', 'Deseja excluir este banner?');
+                
+                if (target.closest('#confirm-delete-btn')) {
+                    if (itemToDelete.id) {
+                        switch(itemToDelete.type) {
+                            case 'pizza': 
+                                menuItems = menuItems.filter(p => p.id !== itemToDelete.id);
+                                saveMenuItems();
+                                renderAdminList('admin-menu-list', menuItems, 'pizza');
+                                break;
+                            case 'addon':
+                                settings.addons = settings.addons.filter(a => a.id !== itemToDelete.id);
+                                saveSettings();
+                                renderAdminList('admin-addons-list', settings.addons, 'addon');
+                                break;
+                            case 'banner':
+                                settings.banners = settings.banners.filter(b => b.id !== itemToDelete.id);
+                                saveSettings();
+                                renderAdminList('admin-banners-list', settings.banners, 'banner');
+                                break;
+                        }
+                    }
+                    closeModal('confirm-modal');
+                }
+            });
+
+            // --- LISTENERS DE SUBMISSÃO DE FORMULÁRIOS ---
+            document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); handleLogin(e.target.email.value, e.target.password.value); });
+            document.getElementById('pizza-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = parseInt(e.target['pizza-id'].value);
+                const data = { 
+                    type: 'pizza', // Garante que é do tipo pizza
+                    name: e.target['pizza-name'].value, 
+                    category: e.target['pizza-category'].value, 
+                    description: e.target['pizza-description'].value, 
+                    prices: {
+                        broto: parseFloat(e.target['pizza-price-broto'].value),
+                        media: parseFloat(e.target['pizza-price-media'].value),
+                        grande: parseFloat(e.target['pizza-price-grande'].value),
+                    },
+                    image: e.target['pizza-image'].value 
+                };
+                if (id) {
+                    menuItems = menuItems.map(p => p.id === id ? { ...p, ...data } : p);
+                } else {
+                    menuItems.push({ id: Date.now(), ...data });
+                }
+                saveMenuItems();
+                renderAdminList('admin-menu-list', menuItems, 'pizza');
+                closeModal('pizza-form-modal');
+            });
+             document.getElementById('addon-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = parseInt(e.target['addon-id'].value);
+                const data = { name: e.target['addon-name'].value, price: parseFloat(e.target['addon-price'].value) };
+                if (id) {
+                    settings.addons = settings.addons.map(a => a.id === id ? { ...a, ...data } : a);
+                } else {
+                    settings.addons.push({ id: Date.now(), ...data });
+                }
+                saveSettings();
+                renderAdminList('admin-addons-list', settings.addons, 'addon');
+                closeModal('addon-form-modal');
+            });
+             document.getElementById('banner-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = parseInt(e.target['banner-id'].value);
+                const data = { imageUrl: e.target['banner-image'].value };
+                if (id) {
+                    settings.banners = settings.banners.map(b => b.id === id ? { ...b, ...data } : b);
+                } else {
+                    settings.banners.push({ id: Date.now(), ...data });
+                }
+                saveSettings();
+                renderAdminList('admin-banners-list', settings.banners, 'banner');
+                closeModal('banner-form-modal');
+            });
+            
+            initApp();
+        });
+    </script>
+</body>
+</html>
+
